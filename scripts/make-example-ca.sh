@@ -2,6 +2,8 @@
 
 # set -x
 
+set -e
+
 # Make key pairs for a fake local CA and a few example.com 
 # names with the latter's certs also covering *.example.com
 
@@ -116,7 +118,7 @@ do
 	openssl ca -batch -in $host.csr -out $host.crt \
 		-days 3650 -keyfile oe.priv -cert oe.csr \
 		-passin pass:$PASS -config openssl.cnf
-	((index++))
+	((index++)) || true
     # make a file with catenated private key and cert for use 
     # with lighttpd
     cat $host.priv $host.crt >$host.pem

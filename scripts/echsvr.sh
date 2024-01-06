@@ -2,6 +2,8 @@
 
 # set -x
 
+set -e
+
 # to pick up the relevant configuration
 : ${CFGTOP:=`/bin/pwd`}
 

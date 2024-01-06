@@ -5,6 +5,8 @@
 
 # set -x
 
+set -e
+
 
 # to pick up correct .so's - maybe note 
 : ${GETOPTDIR:=/usr/bin}
@@ -560,10 +562,6 @@ else
     ( echo -e "$httpreq" ; sleep $sleepaftr) | $vgcmd openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $tcust $hrrstr >$TMPF 2>&1
 fi
 
-c200=`grep -c "200 OK" $TMPF`
-csucc=`grep -c "ECH: success" $TMPF`
-c4xx=`grep -ce "^HTTP/1.1 4[0-9][0-9] " $TMPF`
-
 if [[ "$DEBUG" == "yes" ]]
 then
 	echo "$0 All output" 
@@ -588,7 +586,7 @@ allresult=`grep "ECH: " $TMPF`
 sslerror=`grep ":error:" $TMPF \
              | grep -v BIO_new_file \
              | grep -v NCONF_get_string \
-             | grep -v "error:8000000" `
+             | grep -v "error:8000000" ` || true
 rm -f $TMPF
 if (( $goodresult > 0 ))
 then
@@ -617,12 +615,3 @@ then
 fi
 echo $allresult
 exit $res
-# exit with something useful
-# not sure if this still useful, check sometime...
-if [[ "$csucc" == "1" && "$c4xx" == "0" ]]
-then
-    exit 0
-else
-    exit 44
-fi 
-exit 66
