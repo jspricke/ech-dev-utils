@@ -5,12 +5,6 @@
 # Make key pairs for a fake local CA and a few example.com 
 # names with the latter's certs also covering *.example.com
 
-: ${CODETOP:=$HOME/code/openssl}
-: ${LD_LIBRARY_PATH:=$CODETOP}
-: ${OBIN:=$CODETOP/apps/openssl}
-export LD_LIBRARY_PATH
-
-#set -x
 DSTR=`date -u --rfc-3339=s | sed -e 's/ /T/' | sed -e 's/:/-/g'`
 echo "Running $0 at $DSTR"
 
@@ -37,7 +31,7 @@ then
 	# this should probably be random and longer
 	# don't want it to be a fingerprint for this
 	# service
-	echo $RANDOM$RANDOM | $OBIN sha1 | awk '{print $2}' >serial
+	echo $RANDOM$RANDOM | openssl sha1 | awk '{print $2}' >serial
 	cp serial serial.1st
 fi
 
@@ -60,9 +54,6 @@ then
     if [ -f ../openssl.cnf ]
     then
         cp ../openssl.cnf .
-    elif [ -f $CODETOP/apps/openssl.cnf ]
-    then
-        cp $CODETOP/apps/openssl.cnf .
     else
         cp /etc/ssl/openssl.cnf .
     fi
@@ -99,7 +90,7 @@ LENGTHS=(2048 3072 4096)
 NLENGTHS=${#LENGTHS[*]}
 
 # make the root CA key pair
-$OBIN req -batch -new -x509 -days 3650 -extensions v3_ca \
+openssl req -batch -new -x509 -days 3650 -extensions v3_ca \
 	-newkey rsa -keyout oe.priv  -out oe.csr  \
 	-config openssl.cnf -passin pass:$PASS \
 	-subj "/C=IE/ST=Laighin/O=openssl-ech/CN=ca" \
@@ -118,11 +109,11 @@ do
 	length=${LENGTHS[((index%NLENGTHS))]}
 
 	echo "Doing name $index, at $length"
-	$OBIN req -new -newkey rsa -days 3650 -keyout $host.priv \
+	openssl req -new -newkey rsa -days 3650 -keyout $host.priv \
 		-out $host.csr -nodes -config openssl.cnf \
 		-subj "/C=IE/ST=Laighin/L=dublin/O=openssl-ech/CN=$host" \
 		-addext "subjectAltName = DNS:*.$host,DNS:$host"
-	$OBIN ca -batch -in $host.csr -out $host.crt \
+	openssl ca -batch -in $host.csr -out $host.crt \
 		-days 3650 -keyfile oe.priv -cert oe.csr \
 		-passin pass:$PASS -config openssl.cnf
 	((index++))
@@ -139,7 +130,6 @@ LDIR=$HOME/code/dist/Debug/
 if [ -f $LDIR/bin/certutil ]
 then
 	mkdir -p nssca
-	export LD_LIBRARY_PATH=$LDIR/lib
 	$LDIR/bin/certutil -A -i oe.csr -n "oe" -t "CT,C,C" -d nssca/
 fi
 

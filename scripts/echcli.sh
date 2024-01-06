@@ -7,8 +7,6 @@
 
 
 # to pick up correct .so's - maybe note 
-: ${CODETOP:=$HOME/code/openssl}
-export LD_LIBRARY_PATH=$CODETOP
 : ${GETOPTDIR:=/usr/bin}
 # DNS recursive to use (don't ask:-)
 : ${DNSRECURSIVE=""}
@@ -227,7 +225,7 @@ fi
 # ought work
 TRACING=""
 tmpf=`mktemp`
-$CODETOP/apps/openssl s_client -help >$tmpf 2>&1
+openssl s_client -help >$tmpf 2>&1
 tcount=`grep -c 'trace output of protocol messages' $tmpf`
 if [[ "$tcount" == "1" ]]
 then
@@ -538,7 +536,7 @@ TMPF=`mktemp /tmp/echtestXXXX`
 if [[ "$DEBUG" == "yes" ]]
 then
     echo "HTTP REQ: $httpreq"
-    echo "Running: $CODETOP/apps/openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $earlystr $tcust $hrrstr"
+    echo "Running: openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $earlystr $tcust $hrrstr"
 fi
 # seconds to sleep after firing up client so that tickets might arrive
 sleepaftr=2
@@ -557,9 +555,9 @@ fi
 if [[ "$EARLY_DATA" == "yes" ]]
 then
     httpreq1=${httpreq/foo.example.com/barbar.example.com}
-    ( echo -e "$httpreq1" ; sleep $sleepaftr) | $vgcmd $CODETOP/apps/openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $earlystr $tcust $hrrstr >$TMPF 2>&1
+    ( echo -e "$httpreq1" ; sleep $sleepaftr) | $vgcmd openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $earlystr $tcust $hrrstr >$TMPF 2>&1
 else
-    ( echo -e "$httpreq" ; sleep $sleepaftr) | $vgcmd $CODETOP/apps/openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $tcust $hrrstr >$TMPF 2>&1
+    ( echo -e "$httpreq" ; sleep $sleepaftr) | $vgcmd openssl s_client $IP_PROTSEL $dbgstr $certsdb $force13 $target $echstr $snioutercmd $session $alpn $ciphers $tcust $hrrstr >$TMPF 2>&1
 fi
 
 c200=`grep -c "200 OK" $TMPF`

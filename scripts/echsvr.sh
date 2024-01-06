@@ -2,9 +2,6 @@
 
 # set -x
 
-# to pick up correct .so's - maybe note 
-: ${CODETOP:=$HOME/code/openssl}
-export LD_LIBRARY_PATH=$CODETOP
 # to pick up the relevant configuration
 : ${CFGTOP:=`/bin/pwd`}
 
@@ -186,7 +183,7 @@ keyfile2="-key2 $KEYFILE2 -cert2 $CERTFILE2"
 # ought work
 TRACING=""
 tmpf=`mktemp`
-$CODETOP/apps/openssl s_server -help >$tmpf 2>&1
+openssl s_server -help >$tmpf 2>&1
 tcount=`grep -c 'trace protocol messages' $tmpf`
 if [[ "$tcount" == "1" ]]
 then
@@ -307,8 +304,8 @@ fi
 
 if [[ "$DEBUG" == "yes" ]]
 then
-    echo "Running: $sudocmd $vgcmd $CODETOP/apps/openssl s_server $dbgstr $keyfile1 $keyfile2 $certsdb $portstr $force13 $echstr $snicmd $trialdecrypt $alpn_cmd $echpad_cmd $hrr_cmd $nreq_cmd $WEBSERVER $earlystr $greasestr"
+    echo "Running: $sudocmd $vgcmd openssl s_server $dbgstr $keyfile1 $keyfile2 $certsdb $portstr $force13 $echstr $snicmd $trialdecrypt $alpn_cmd $echpad_cmd $hrr_cmd $nreq_cmd $WEBSERVER $earlystr $greasestr"
 fi
-$sudocmd $vgcmd $CODETOP/apps/openssl s_server $dbgstr $keyfile1 $keyfile2 $certsdb $portstr $force13 $echstr $snicmd $trialdecrypt $alpn_cmd $echpad_cmd $hrr_cmd $nreq_cmd $WEBSERVER $earlystr $greasestr
+$sudocmd $vgcmd openssl s_server $dbgstr $keyfile1 $keyfile2 $certsdb $portstr $force13 $echstr $snicmd $trialdecrypt $alpn_cmd $echpad_cmd $hrr_cmd $nreq_cmd $WEBSERVER $earlystr $greasestr
 
 
