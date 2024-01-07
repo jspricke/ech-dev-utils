@@ -576,7 +576,11 @@ then
 	echo ""
 fi
 
-goodresult=`grep -c "ECH: success" $TMPF`
+if [[ "$GREASE" == "yes" ]]; then
+  goodresult=`grep -c "ECH: only greasing, and got ECH in return" $TMPF`
+else
+  goodresult=`grep -c "ECH: success" $TMPF`
+fi
 echo "$0 Summary: "
 allresult=`grep "ECH: " $TMPF`
 # check if we saw any OpenSSL Errors, except we ignore

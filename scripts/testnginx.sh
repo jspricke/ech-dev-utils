@@ -2,20 +2,21 @@
 
 # set -x
 
-# to pick up correct executables and .so's
-: ${CODETOP:=$HOME/code/openssl}
-export LD_LIBRARY_PATH=$CODETOP
-: ${EDTOP:=$HOME/code/ech-dev-utils}
-: ${NTOP:=$HOME/code/nginx}
-# where we have/want test files
-: ${RUNTOP:=`/bin/pwd`}
-export RUNTOP=$RUNTOP
-: ${LIGHTY:=$HOME/code/lighttpd1.4}
+set -e
 
-# make directories for lighttpd stuff if needed
+# to pick up correct executables and .so's
+EDTOP="$(dirname "$(realpath "$0")")/.."
+export EDTOP
+# where we have/want test files
+RUNTOP=$(mktemp -d)
+export RUNTOP
+chmod a+rx "$RUNTOP"
+
+# make directories for nginx stuff if needed
 mkdir -p $RUNTOP/nginx/logs
 mkdir -p $RUNTOP/nginx/www
 mkdir -p $RUNTOP/nginx/foo
+mkdir -p "$RUNTOP/echkeydir"
 
 # in case we wanna dump core and get a backtrace, make a place for
 # that (dir name is also in configs/nginxmin.conf)
@@ -38,43 +39,6 @@ SPLIT="no"
 . $EDTOP/scripts/funcs.sh
 
 prep_server_dirs nginx
-
-# if we want to reload config then that's "graceful restart"
-PIDFILE=$RUNTOP/nginx/logs/nginx.pid
-if [[ "$1" == "graceful" ]]
-then
-    echo "Telling nginx to do the graceful thing"
-    if [ -f $PIDFILE ]
-    then
-        # sending sighup to the process reloads the config
-        kill -SIGHUP `cat $PIDFILE`
-        exit $?
-    fi
-fi
-
-# Kill off old processes from the last test
-if [ -f $PIDFILE ]
-then
-    echo "Killing old nginx in process `cat $PIDFILE`"
-    kill `cat $PIDFILE`
-    rm -f $PIDFILE
-else
-    echo "Can't find $PIDFILE - trying killall nginx"
-    killall nginx
-fi
-
-# if starting afresh check if some process was left over after gdb or something
-
-# kill off other processes
-procs=`ps -ef | grep nginx | grep -v grep | grep -v testnginx | awk '{print $2}'`
-for proc in $procs
-do
-    echo "Killing old nginx (from gdb maybe) in $proc"
-    kill -9 $proc
-done
-
-# give the n/w a chance so ports are free to use
-sleep 2
 
 # set to use valgrind, unset to not
 # VALGRIND="valgrind --leak-check=full --show-leak-kinds=all"
@@ -100,11 +64,15 @@ then
     do_envsubst
 fi
 
-echo "Executing: $VALGRIND $NTOP/objs/nginx -c nginxmin.conf"
+echo "Executing: $VALGRIND nginx -c nginxmin.conf"
 # move over there to run code, so config file can have relative paths
 cd $RUNTOP
-$VALGRIND $NTOP/objs/nginx -c nginxmin.conf
-cd -
+"$EDTOP/scripts/make-example-ca.sh"
+openssl ech -public_name example.com -pemout echkeydir/echconfig.pem.ech || true
+ln -s echkeydir/echconfig.pem.ech echconfig.pem
+$VALGRIND nginx -c "$RUNTOP/nginx/nginxmin.conf"
+
+trap "nginx -s quit" EXIT INT QUIT PIPE
 
 for type in grease public real hrr
 do
@@ -126,15 +94,4 @@ else
     else
         rm -f $CLILOGFILE $SRVLOGFILE
     fi
-fi
-
-# Kill off old processes from the last test
-if [ -f $PIDFILE ]
-then
-    echo "Killing nginx in process `cat $PIDFILE`"
-    kill `cat $PIDFILE`
-    rm -f $PIDFILE
-else
-    echo "Can't find $PIDFILE - trying killall nginx"
-    killall nginx
 fi

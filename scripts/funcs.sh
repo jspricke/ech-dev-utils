@@ -122,7 +122,8 @@ s_server_stop() {
 do_envsubst() {
     envcheck $EDTOP
     envcheck $RUNTOP
-    cat $EDTOP/configs/nginxsplit.conf | envsubst '{$RUNTOP}' >$RUNTOP/nginx/nginxsplit.conf
+    sed "s#\$RUNTOP#$RUNTOP#g" "$EDTOP/configs/nginxmin.conf" > "$RUNTOP/nginx/nginxmin.conf"
+    sed "s#\$RUNTOP#$RUNTOP#g" "$EDTOP/configs/nginxsplit.conf" > "$RUNTOP/nginx/nginxsplit.conf"
 }
 
 prep_server_dirs() {
