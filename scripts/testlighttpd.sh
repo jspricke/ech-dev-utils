@@ -3,15 +3,13 @@
 # Run a lighttpd on localhost:3443 with foo.example.com accessible
 # via ECH
 
-# set -x
+set -x
+set -e
 
-# to pick up correct executables and .so's
-: ${CODETOP:=$HOME/code/openssl}
-export LD_LIBRARY_PATH=$CODETOP
-: ${EDTOP:=$HOME/code/ech-dev-utils}
-: ${RUNTOP:=`/bin/pwd`}
-export RUNTOP=$RUNTOP
-: ${LIGHTY:=$HOME/code/lighttpd1.4}
+EDTOP="$(dirname "$(realpath "$0")")/.."
+export EDTOP
+RUNTOP=$(mktemp -d)
+export RUNTOP
 
 PIDFILE=$RUNTOP/lighttpd/logs/lighttpd.pid
 CLILOGFILE=`mktemp`
@@ -20,15 +18,19 @@ KEEPLOG="no"
 
 allgood="yes"
 
-export TOP=$CODETOP
+. "$EDTOP/scripts/funcs.sh"
 
-export LD_LIBRARY_PATH=$CODETOP
+mkdir -p "$RUNTOP/echkeydir"
+mkdir -p "$RUNTOP/lighttpd/logs"
+mkdir -p "$RUNTOP/lighttpd/dir-example.com"
+cd "$RUNTOP"
 
-. $EDTOP/scripts/funcs.sh
+"$EDTOP/scripts/make-example-ca.sh"
+openssl ech -public_name example.com -pemout echkeydir/echconfig.pem.ech || true
+ln -s echkeydir/echconfig.pem.ech echconfig.pem
 
 prep_server_dirs lighttpd
 
-lighty_stop
 lighty_start $EDTOP/configs/lighttpdmin.conf
 
 for type in grease public real hrr
