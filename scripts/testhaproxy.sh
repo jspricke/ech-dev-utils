@@ -1,21 +1,14 @@
 #!/bin/bash
 
 # set -x
+set -e
 
 # Run a haproxy test
 
-# to pick up correct .so's - maybe note 
-: ${CODETOP:="$HOME/code/openssl"}
-# to pick up correct wrapper scripts
-: ${EDTOP:="$HOME/code/ech-dev-utils"}
-# to set where our cadir and ECH keys are
-: ${RUNTOP:="$HOME/lt"}
-# where backend web server can be found
-: ${LIGHTY:="$HOME/code/lighttpd1.4"}
-# where frontend haproxy can be found
-: ${HAPPY:="$HOME/code/haproxy"}
-
-export LD_LIBRARY_PATH=$CODETOP
+EDTOP="$(dirname "$(realpath "$0")")/.."
+export EDTOP
+RUNTOP=$(mktemp -d)
+export RUNTOP
 
 HLOGDIR="$RUNTOP/haproxy/logs"
 SRVLOGFILE="$HLOGDIR/haproxy.log"
@@ -26,6 +19,15 @@ KEEPLOG="no"
 allgood="yes"
 
 . $EDTOP/scripts/funcs.sh
+
+mkdir -p "$RUNTOP/echkeydir"
+mkdir -p "$RUNTOP/lighttpd/logs"
+mkdir -p "$RUNTOP/lighttpd/dir-example.com"
+cd "$RUNTOP"
+
+"$EDTOP/scripts/make-example-ca.sh"
+openssl ech -public_name example.com -pemout echkeydir/echconfig.pem.ech || true
+ln -s echkeydir/echconfig.pem.ech echconfig.pem
 
 prep_server_dirs lighttpd
 
@@ -39,13 +41,11 @@ fi
 
 lighty_start $EDTOP/configs/lighttpd4haproxymin.conf
 
-killall haproxy
-
 # Now start up a haproxy
 # run haproxy in background
 HAPDEBUGSTR=" -DdV " 
-echo "Executing: $HAPPY/haproxy -f $EDTOP/configs/haproxymin.conf $HAPDEBUGSTR >$SRVLOGFILE 2>&1"
-$HAPPY/haproxy -f $EDTOP/configs/haproxymin.conf $HAPDEBUGSTR >$SRVLOGFILE 2>&1
+echo "Executing: haproxy -f $EDTOP/configs/haproxymin.conf $HAPDEBUGSTR >$SRVLOGFILE 2>&1"
+haproxy -f $EDTOP/configs/haproxymin.conf $HAPDEBUGSTR >$SRVLOGFILE 2>&1
 
 # all things should appear the same to the client
 # server log checks will tells us if stuff worked or not
@@ -59,7 +59,9 @@ do
     done
 done
 
-killall haproxy lighttpd
+lighty_stop
+kill "$(cat "$BE_PIDFILE")"
+
 rm -f $BE_PIDFILE
 
 if [[ "$allgood" == "yes" ]]
